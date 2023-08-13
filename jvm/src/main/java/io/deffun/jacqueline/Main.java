@@ -12,21 +12,26 @@ import graphql.schema.idl.TypeDefinitionRegistry;
 public class Main {
     public static void main(String[] args) {
         String schema = """
+                type Movie {
+                    title: String!
+                    released: Int
+                    tagline: String
+                }
                 type Query {
-                    what: String
+                    movies: [Movie!]
                 }
                 """;
         SchemaParser schemaParser = new SchemaParser();
         TypeDefinitionRegistry typeDefinitionRegistry = schemaParser.parse(schema);
         RuntimeWiring runtimeWiring = RuntimeWiring.newRuntimeWiring()
                 .type("Query", builder -> builder
-                        .dataFetcher("what", new StaticDataFetcher("Say what again!")))
+                        .dataFetcher("movies", new MoviesDataFetcher()))
                 .build();
         SchemaGenerator schemaGenerator = new SchemaGenerator();
         GraphQLSchema graphQLSchema = schemaGenerator
                 .makeExecutableSchema(typeDefinitionRegistry, runtimeWiring);
         GraphQL graphQL = GraphQL.newGraphQL(graphQLSchema).build();
-        ExecutionResult executionResult = graphQL.execute("{ what }");
+        ExecutionResult executionResult = graphQL.execute("{ movies { title } }");
         System.out.println(executionResult.toSpecification());
     }
 }
