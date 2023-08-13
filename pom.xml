@@ -14,7 +14,7 @@
     </modules>
 
     <properties>
-        <graphql-java.version>21.0</graphql-java.version>
+        <graphql-java.version>20.2</graphql-java.version>
     </properties>
 
     <dependencyManagement>
