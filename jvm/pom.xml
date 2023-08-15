@@ -24,6 +24,11 @@
             <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java-extended-scalars</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.fria</groupId>
+            <artifactId>lilo</artifactId>
+            <version>23.7.0</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -9,6 +9,8 @@ import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
+import io.fria.lilo.Lilo;
+import io.fria.lilo.RemoteSchemaSource;
 import org.dataloader.DataLoaderFactory;
 import org.dataloader.DataLoaderRegistry;
 
@@ -56,5 +58,15 @@ public class Main {
 
         ExecutionResult executionResult = graphQL.execute(executionInput);
         System.out.println(executionResult.toSpecification());
+
+        Lilo lilo = Lilo.builder()
+                .addSource(RemoteSchemaSource
+                        .create("RickAndMorty", "https://rickandmortyapi.com/graphql"))
+                .build();
+        ExecutionInput execInput = ExecutionInput.newExecutionInput()
+                .query("{ charactersByIds(ids: [1, 2]) { name } }")
+                .build();
+        ExecutionResult execResult = lilo.stitch(execInput);
+        System.out.println(execResult.toSpecification());
     }
 }
