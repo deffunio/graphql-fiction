@@ -5,17 +5,29 @@ import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.scalars.ExtendedScalars;
 import graphql.schema.GraphQLSchema;
+import graphql.schema.SchemaTransformer;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
-import io.fria.lilo.Lilo;
-import io.fria.lilo.RemoteSchemaSource;
+import io.deffun.snatch.core.GraphQLDirectiveVisitor;
 import org.dataloader.DataLoaderFactory;
 import org.dataloader.DataLoaderRegistry;
 
 public class Main {
     private static final String SCHEMA = """
+            input Header {
+              name: String!, value: String!
+            }
+            input Renames {
+              operationName: String!
+              typePrefix: String!
+            }
+            directive @graphql(
+              renames: Renames!
+              endpoint: String!
+              headers: [Header!]
+            ) repeatable on OBJECT
             type Movie {
                 title: String!
                 released: Int
@@ -27,7 +39,14 @@ public class Main {
                 name: String!
                 born: Date
             }
-            type Query {
+            type Query
+            @graphql(
+              renames: {
+                operationName: "rickAndMorty"
+                typePrefix: "RM"
+              }
+              endpoint: "https://rickandmortyapi.com/graphql"
+            ) {
                 movies: [Movie!]
             }
             """;
@@ -46,7 +65,8 @@ public class Main {
         SchemaGenerator schemaGenerator = new SchemaGenerator();
         GraphQLSchema graphQLSchema = schemaGenerator
                 .makeExecutableSchema(typeDefinitionRegistry, runtimeWiring);
-        GraphQL graphQL = GraphQL.newGraphQL(graphQLSchema).build();
+        GraphQLSchema transformed = new SchemaTransformer().transform(graphQLSchema, new GraphQLDirectiveVisitor());
+        GraphQL graphQL = GraphQL.newGraphQL(transformed).build();
 
         DataLoaderRegistry dataLoaderRegistry = new DataLoaderRegistry();
         dataLoaderRegistry.register("directedByDataLoader",
@@ -59,14 +79,10 @@ public class Main {
         ExecutionResult executionResult = graphQL.execute(executionInput);
         System.out.println(executionResult.toSpecification());
 
-        Lilo lilo = Lilo.builder()
-                .addSource(RemoteSchemaSource
-                        .create("RickAndMorty", "https://rickandmortyapi.com/graphql"))
-                .build();
         ExecutionInput execInput = ExecutionInput.newExecutionInput()
-                .query("{ charactersByIds(ids: [1, 2]) { name } }")
+                .query("{ rickAndMorty { charactersByIds(ids: [1, 2]) { name } } }")
                 .build();
-        ExecutionResult execResult = lilo.stitch(execInput);
+        ExecutionResult execResult = graphQL.execute(execInput);
         System.out.println(execResult.toSpecification());
     }
 }
